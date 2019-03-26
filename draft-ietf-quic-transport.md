@@ -2211,8 +2211,8 @@ current Probe Timeout (PTO).
 Each endpoint advertises its own idle timeout to its peer.  An endpoint
 restarts any timer it maintains when a packet from its peer is received and
 processed successfully.  The timer is also restarted when sending a packet
-containing frames other than ACK or PADDING (an ACK-eliciting packet, see
-{{QUIC-RECOVERY}}), but only if no other ACK-eliciting packets have been sent
+containing frames other than ACK or PADDING (an ack-provoking packet, see
+{{QUIC-RECOVERY}}), but only if no other ack-provoking packets have been sent
 since last receiving a packet.  Restarting when sending packets ensures that
 connections do not prematurely time out when initiating new activity.
 

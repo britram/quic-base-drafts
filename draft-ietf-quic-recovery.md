@@ -121,14 +121,14 @@ In-flight:
   and neither acknowledged nor declared lost, and they are not
   ACK-only.
 
-Ack-eliciting Frames:
+Ack-provoking Frames:
 
-: All frames besides ACK or PADDING are considered ack-eliciting.
+: All frames besides ACK or PADDING are considered ack-provoking.
 
-Ack-eliciting Packets:
+Ack-provoking Packets:
 
-: Packets that contain ack-eliciting frames elicit an ACK from the receiver
-  within the maximum ack delay and are called ack-eliciting packets.
+: Packets that contain ack-provoking frames elicit an ACK from the receiver
+  within the maximum ack delay and are called ack-provoking packets.
 
 Crypto Packets:
 
@@ -160,7 +160,7 @@ acknowledged or declared lost and sent in new packets as necessary. The types
 of frames contained in a packet affect recovery and congestion control logic:
 
 * All packets are acknowledged, though packets that contain no
-  ack-eliciting frames are only acknowledged along with ack-eliciting
+  ack-provoking frames are only acknowledged along with ack-provoking
   packets.
 
 * Long header packets that contain CRYPTO frames are critical to the
@@ -201,7 +201,7 @@ determined by stream offsets encoded within STREAM frames.
 QUIC's packet number is strictly increasing within a packet number space,
 and directly encodes transmission order.  A higher packet number signifies
 that the packet was sent later, and a lower packet number signifies that
-the packet was sent earlier.  When a packet containing ack-eliciting
+the packet was sent earlier.  When a packet containing ack-provoking
 frames is detected lost, QUIC rebundles necessary frames in a new packet
 with a new packet number, removing ambiguity about which packet is
 acknowledged when an ACK is received.  Consequently, more accurate RTT
@@ -240,14 +240,14 @@ latency before a userspace QUIC receiver processes a received packet.
 # Generating Acknowledgements
 
 QUIC SHOULD delay sending acknowledgements in response to packets, but MUST NOT
-excessively delay acknowledgements of ack-eliciting packets. Specifically,
+excessively delay acknowledgements of ack-provoking packets. Specifically,
 implementations MUST attempt to enforce a maximum ack delay to avoid causing
 the peer spurious timeouts.  The maximum ack delay is communicated in the
 `max_ack_delay` transport parameter and the default value is 25ms.
 
 An acknowledgement SHOULD be sent immediately upon receipt of a second
-ack-eliciting packet. QUIC recovery algorithms do not assume the peer sends
-an ACK immediately when receiving a second ack-eliciting packet.
+ack-provoking packet. QUIC recovery algorithms do not assume the peer sends
+an ACK immediately when receiving a second ack-provoking packet.
 
 In order to accelerate loss recovery and reduce timeouts, the receiver SHOULD
 send an immediate ACK after it receives an out-of-order packet. It could send
@@ -306,7 +306,7 @@ continue making forward progress.
 Round-trip time (RTT) is calculated when an ACK frame arrives by
 computing the difference between the current time and the time the largest
 acked packet was sent.  An RTT sample MUST NOT be taken for a packet that
-is not newly acknowledged or not ack-eliciting.
+is not newly acknowledged or not ack-provoking.
 
 When RTT is calculated, the ack delay field from the ACK frame SHOULD be limited
 to the max_ack_delay specified by the peer.  Limiting ack_delay to max_ack_delay
@@ -484,7 +484,7 @@ sooner, as soon as handshake keys are available (see Section 4.10 of
 
 ## Probe Timeout {#pto}
 
-A Probe Timeout (PTO) triggers a probe packet when ack-eliciting data is in
+A Probe Timeout (PTO) triggers a probe packet when ack-provoking data is in
 flight but an acknowledgement is not received within the expected period of
 time.  A PTO enables a connection to recover from loss of tail packets or acks.
 The PTO algorithm used in QUIC implements the reliability functions of Tail Loss
@@ -494,7 +494,7 @@ TCP's retransmission timeout period {{?RFC6298}}.
 
 ### Computing PTO
 
-When an ack-eliciting packet is transmitted, the sender schedules a timer for
+When an ack-provoking packet is transmitted, the sender schedules a timer for
 the PTO period as follows:
 
 ~~~
@@ -518,15 +518,15 @@ section. The PTO period MUST be set to twice its current value. This exponential
 reduction in the sender's rate is important because the PTOs might be caused by
 loss of packets or acknowledgements due to severe congestion.
 
-A sender computes its PTO timer every time an ack-eliciting packet is sent. A
+A sender computes its PTO timer every time an ack-provoking packet is sent. A
 sender might choose to optimize this by setting the timer fewer times if it
-knows that more ack-eliciting packets will be sent within a short period of
+knows that more ack-provoking packets will be sent within a short period of
 time.
 
 ### Sending Probe Packets
 
-When a PTO timer expires, the sender MUST send one ack-eliciting packet as a
-probe. A sender MAY send up to two ack-eliciting packets, to avoid an expensive
+When a PTO timer expires, the sender MUST send one ack-provoking packet as a
+probe. A sender MAY send up to two ack-provoking packets, to avoid an expensive
 consecutive PTO expiration due to a single packet loss.
 
 Consecutive PTO periods increase exponentially, and as a result, connection
@@ -534,7 +534,7 @@ recovery latency increases exponentially as packets continue to be dropped in
 the network.  Sending two packets on PTO expiration increases resilience to
 packet drops, thus reducing the probability of consecutive PTO events.
 
-Probe packets sent on a PTO MUST be ack-eliciting.  A probe packet SHOULD carry
+Probe packets sent on a PTO MUST be ack-provoking.  A probe packet SHOULD carry
 new data when possible.  A probe packet MAY carry retransmitted unacknowledged
 data when new data is unavailable, when flow control does not permit new data to
 be sent, or to opportunistically reduce loss recovery delay.  Implementations
@@ -552,7 +552,7 @@ When a PTO timer expires, new or previously-sent data may not be available to
 send and packets may still be in flight.  A sender can be blocked from sending
 new data in the future if packets are left in flight.  Under these conditions, a
 sender SHOULD mark any packets still in flight as lost.  If a sender wishes to
-establish delivery of packets still in flight, it MAY send an ack-eliciting
+establish delivery of packets still in flight, it MAY send an ack-provoking
 packet and re-arm the PTO timer instead.
 
 
@@ -658,7 +658,7 @@ packets.
 When an ACK frame is received that establishes loss of all in-flight packets
 sent over a long enough period of time, the network is considered to be
 experiencing persistent congestion.  Commonly, this can be established by
-consecutive PTOs, but since the PTO timer is reset when a new ack-eliciting
+consecutive PTOs, but since the PTO timer is reset when a new ack-provoking
 packet is sent, an explicit duration must be used to account for those cases
 where PTOs do not occur or are substantially delayed.  This duration is the
 equivalent of kPersistentCongestionThreshold consecutive PTOs, and is computed
@@ -798,7 +798,7 @@ described in {{loss-detection}}.
 ## Tracking Sent Packets {#tracking-sent-packets}
 
 To correctly implement congestion control, a QUIC sender tracks every
-ack-eliciting packet until the packet is acknowledged or lost.
+ack-provoking packet until the packet is acknowledged or lost.
 It is expected that implementations will be able to access this information by
 packet number and crypto context and store the per-packet fields
 ({{sent-packets-fields}}) for loss recovery and congestion control.
@@ -816,7 +816,7 @@ packet_number:
 : The packet number of the sent packet.
 
 ack_eliciting:
-: A boolean that indicates whether a packet is ack-eliciting.
+: A boolean that indicates whether a packet is ack-provoking.
   If true, it is expected that an acknowledgement will be received,
   though the peer could delay sending the ACK frame containing it
   by up to the MaxAckDelay.
@@ -889,7 +889,7 @@ pto_count:
 : The number of times a PTO has been sent without receiving an ack.
 
 time_of_last_sent_ack_eliciting_packet:
-: The time the most recent ack-eliciting packet was sent.
+: The time the most recent ack-provoking packet was sent.
 
 time_of_last_sent_crypto_packet:
 : The time the most recent crypto packet was sent.
@@ -985,7 +985,7 @@ OnAckReceived(ack, pn_space):
       max(largest_acked_packet[pn_space], ack.largest_acked)
 
   // If the largest acknowledged is newly acked and
-  // ack-eliciting, update the RTT.
+  // ack-provoking, update the RTT.
   if (sent_packets[pn_space][ack.largest_acked] &&
       sent_packets[pn_space][ack.largest_acked].ack_eliciting):
     latest_rtt =
@@ -1078,9 +1078,9 @@ GetEarliestLossTime():
   return time, space
 
 SetLossDetectionTimer():
-  // Don't arm timer if there are no ack-eliciting packets
+  // Don't arm timer if there are no ack-provoking packets
   // in flight.
-  if (no ack-eliciting packets in flight):
+  if (no ack-provoking packets in flight):
     loss_detection_timer.cancel()
     return
 
@@ -1237,7 +1237,7 @@ ecn_ce_counter:
 
 bytes_in_flight:
 : The sum of the size in bytes of all sent packets that contain at least one
-  ack-eliciting or PADDING frame, and have not been acked or declared
+  ack-provoking or PADDING frame, and have not been acked or declared
   lost. The size does not include IP or UDP overhead, but does include the QUIC
   header and AEAD overhead.  Packets only containing ACK frames do not count
   towards bytes_in_flight to ensure congestion control does not impede
@@ -1402,7 +1402,7 @@ Issue and pull request numbers are listed with a leading octothorp.
 - Endpoints discard initial keys as soon as handshake keys are available (#1951,
   #2045)
 - 0-RTT state is discarded when 0-RTT is rejected (#2300)
-- Loss detection timer is cancelled when ack-eliciting frames are in flight
+- Loss detection timer is cancelled when ack-provoking frames are in flight
   (#2117, #2093)
 - Packets are declared lost if they are in flight (#2104)
 - After becoming idle, either pace packets or reset the congestion controller
@@ -1429,7 +1429,7 @@ Issue and pull request numbers are listed with a leading octothorp.
 - Limit ack_delay by max_ack_delay (#2060, #2099)
 - Initial keys are discarded once Handshake are avaialble (#1951, #2045)
 - Reorder ECN and loss detection in pseudocode (#2142)
-- Only cancel loss detection timer if ack-eliciting packets are in flight
+- Only cancel loss detection timer if ack-provoking packets are in flight
   (#2093, #2117)
 
 
